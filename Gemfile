@@ -8,4 +8,6 @@ end
 gem 'spree', github: 'spree/spree', branch: 'master'
 gem 'rails-controller-testing'
 
+gem 'httparty'
+
 gemspec
