@@ -13,4 +13,8 @@ class SpreeOngoingWms::Api
   def create_or_update_order(data)
     @response = SpreeOngoingWms::Request.new(@distributor).put('/api/v1/orders', data)
   end
+
+  def create_or_update_article(data)
+    @response = SpreeOngoingWms::Request.new(@distributor).put('/api/v1/articles', data)
+  end
 end
