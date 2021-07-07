@@ -1,11 +1,12 @@
 module OngoingWms
   class CreateOrUpdateOrder < ApplicationService
-    attr_reader :order, :distributor
+    attr_reader :order, :distributor, :goods_owner_id
 
     def initialize(args = {})
       super
       @distributor = args[:distributor]
       @order = args[:order]
+      @goods_owner_id = args[:goods_owner_id]
     end
 
     def call
@@ -18,10 +19,13 @@ module OngoingWms
       completed_without_errors?
     end
 
+    private
+
     def create_or_update_order(order_data)
       response = SpreeOngoingWms::Api.new(@distributor).create_or_update_order(order_data)
       if response.success?
         response = JSON.parse(response.body, symbolize_names: true)
+        puts response
       else
         raise ServiceError.new([Spree.t(:error, response: response)])
       end
@@ -29,22 +33,10 @@ module OngoingWms
 
     def order_data
       {
-        goodsOwnerId: 31,
+        goodsOwnerId: @goods_owner_id,
         orderNumber: @order.number,
         deliveryDate: 2.days.from_now,
-        consignee: {
-          customerNumber: @order.ship_address.phone,
-          name: @order.ship_address.first_name + ' ' + @order.ship_address.last_name,
-          address1: @order.ship_address.address1,
-          address2: @order.ship_address.address2,
-          # address3: "<string>",
-          postCode: @order.ship_address.zipcode,
-          city: @order.ship_address.city,
-          countryCode: @order.ship_address.country.iso,
-          # countryStateCode: "<string>",
-          # remark: "<string>",
-          # doorCode: "<string>"
-        },
+        consignee: consignee_detail,
         # referenceNumber: "<string>",
         # goodsOwnerOrderId: "<string>",
         # salesCode: "<string>",
@@ -82,36 +74,7 @@ module OngoingWms
           # transporterCode: "<string>",
           # transporterServiceCode: "<string>"
         },
-        orderLines: [
-          # {
-          #   rowNumber: "<string>",
-          #   articleNumber: "<string>",
-          #   numberOfItems: "<decimal>",
-          #   comment: "<string>",
-          #   shouldBePicked: "<boolean>",
-          #   serialNumber: "<string>",
-          #   lineTotalCustomsValue: "<decimal>",
-          #   batchNumber: "<string>",
-          #   lineType: {
-          #     code: "labore Lorem",
-          #     name: "exercitation aliqua dolore"
-          #   }
-          # },
-          # {
-          #   rowNumber: "<string>",
-          #   articleNumber: "<string>",
-          #   numberOfItems: "<decimal>",
-          #   comment: "<string>",
-          #   shouldBePicked: "<boolean>",
-          #   serialNumber: "<string>",
-          #   lineTotalCustomsValue: "<decimal>",
-          #   batchNumber: "<string>",
-          #   lineType: {
-          #     code: "eu nostrud ullamco ut",
-          #     name: "fugiat deserunt "
-          #   }
-          # }
-        ],
+        orderLines: order_lines,
         customsInfo: {
           # customsValueCurrencyCode: "<string>"
         },
@@ -136,6 +99,64 @@ module OngoingWms
         },
         customerPrice: @order.total
       }.to_json
+    end
+
+    def order_lines
+      # [
+      #   {
+      #     rowNumber: "<string>",
+      #     articleNumber: "<string>",
+      #     numberOfItems: "<decimal>",
+      #     comment: "<string>",
+      #     shouldBePicked: "<boolean>",
+      #     serialNumber: "<string>",
+      #     lineTotalCustomsValue: "<decimal>",
+      #     batchNumber: "<string>",
+      #     lineType: {
+      #       code: "labore Lorem",
+      #       name: "exercitation aliqua dolore"
+      #     }
+      #   },
+      #   {
+      #     rowNumber: "<string>",
+      #     articleNumber: "<string>",
+      #     numberOfItems: "<decimal>",
+      #     comment: "<string>",
+      #     shouldBePicked: "<boolean>",
+      #     serialNumber: "<string>",
+      #     lineTotalCustomsValue: "<decimal>",
+      #     batchNumber: "<string>",
+      #     lineType: {
+      #       code: "eu nostrud ullamco ut",
+      #       name: "fugiat deserunt "
+      #     }
+      #   }
+      # ]
+      line_items = []
+      @order.line_items.each do |item|
+        line_item = {}
+        line_item[:rowNumber] = item.id
+        line_item[:articleNumber] = item.product.id
+        line_item[:numberOfItems] = item.quantity
+        line_items << line_item
+      end
+      line_items
+    end
+
+    def consignee_detail
+      {
+        customerNumber: @order.ship_address.phone,
+        name: @order.ship_address.first_name + ' ' + @order.ship_address.last_name,
+        address1: @order.ship_address.address1,
+        address2: @order.ship_address.address2,
+        # address3: "<string>",
+        postCode: @order.ship_address.zipcode,
+        city: @order.ship_address.city,
+        countryCode: @order.ship_address.country.iso,
+        # countryStateCode: "<string>",
+        # remark: "<string>",
+        # doorCode: "<string>"
+      }
     end
   end
 end

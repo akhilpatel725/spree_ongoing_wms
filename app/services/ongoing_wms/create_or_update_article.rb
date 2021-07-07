@@ -1,11 +1,12 @@
 module OngoingWms
   class CreateOrUpdateArticle < ApplicationService
-    attr_reader :article, :distributor
+    attr_reader :article, :distributor, :goods_owner_id
 
     def initialize(args = {})
       super
       @distributor = args[:distributor]
       @article = args[:article]
+      @goods_owner_id = args[:goods_owner_id]
     end
 
     def call
@@ -18,10 +19,13 @@ module OngoingWms
       completed_without_errors?
     end
 
+    private
+
     def create_or_update_article(article_data)
       response = SpreeOngoingWms::Api.new(@distributor).create_or_update_article(article_data)
       if response.success?
         response = JSON.parse(response.body, symbolize_names: true)
+        puts response
       else
         raise ServiceError.new([Spree.t(:error, response: response)])
       end
@@ -29,15 +33,15 @@ module OngoingWms
 
     def article_data
       {
-        goodsOwnerId: 31,
+        goodsOwnerId: @goods_owner_id,
         articleNumber: @article.id,
-        articleGroup: {
-          code: "aliquip",
-          name: "aliqua laboris commodo"
-        },
+        # articleGroup: {
+        #   code: "aliquip",
+        #   name: "aliqua laboris commodo"
+        # },
         articleCategory: {
-          code: @article.product&.category&.permalink,
-          name: @article.product&.category&.name
+          code: @article.category&.permalink,
+          name: @article.category&.name
         },
         # articleColor: {
         #   code: "in labore nostrud Lorem",
