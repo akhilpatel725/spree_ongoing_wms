@@ -17,4 +17,8 @@ class SpreeOngoingWms::Api
   def create_or_update_article(data)
     @response = SpreeOngoingWms::Request.new(@distributor).put('/api/v1/articles', data)
   end
+
+  def get_inventory_info(query)
+    @response = SpreeOngoingWms::Request.new(@distributor).get('/api/v1/articles/inventoryPerWarehouse?' + query)
+  end
 end
