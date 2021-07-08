@@ -1,13 +1,12 @@
 module OngoingWms
   module Order
     class CreateOrUpdate < ApplicationService
-      attr_reader :order, :distributor, :goods_owner_id
+      attr_reader :order, :vendor
 
       def initialize(args = {})
         super
-        @distributor = args[:distributor]
+        @vendor = args[:vendor]
         @order = args[:order]
-        @goods_owner_id = args[:goods_owner_id]
       end
 
       def call
@@ -23,7 +22,7 @@ module OngoingWms
       private
 
       def create_or_update_order(order_data)
-        response = SpreeOngoingWms::Api.new(@distributor).create_or_update_order(order_data)
+        response = SpreeOngoingWms::Api.new(@vendor.distributor).create_or_update_order(order_data)
         if response.success?
           response = JSON.parse(response.body, symbolize_names: true)
           puts response
@@ -34,9 +33,9 @@ module OngoingWms
 
       def order_data
         {
-          goodsOwnerId: @goods_owner_id,
+          goodsOwnerId: @vendor.distributor.goods_owner_id,
           orderNumber: @order.number,
-          deliveryDate: 2.days.from_now,
+          deliveryDate: @order.approved_at + 2.days,
           consignee: consignee_detail,
           # referenceNumber: "<string>",
           # goodsOwnerOrderId: "<string>",
@@ -134,7 +133,7 @@ module OngoingWms
         #   }
         # ]
         line_items = []
-        @order.line_items.each do |item|
+        @order.vendor_line_items(@vendor).each do |item|
           line_item = {}
           line_item[:rowNumber] = item.id
           line_item[:articleNumber] = item.product.id
