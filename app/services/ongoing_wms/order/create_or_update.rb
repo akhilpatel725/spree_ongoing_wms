@@ -144,6 +144,8 @@ module OngoingWms
       end
 
       def consignee_detail
+        return {} unless @order.ship_address
+
         {
           customerNumber: @order.ship_address.phone,
           name: @order.ship_address.first_name + ' ' + @order.ship_address.last_name,
