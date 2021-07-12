@@ -1,7 +1,7 @@
 module OngoingWms
   module Article
     class InventoryInfo < ApplicationService
-      attr_reader :article, :vendor
+      attr_reader :vendor, :article_numbers
       MAX_ARTICLES_TO_GET = 20
 
       def initialize(args = {})
@@ -23,8 +23,8 @@ module OngoingWms
       private
 
       def get_inventory_info
-        @article_numbers.each_slice(20) do |numbers|
-          response = SpreeOngoingWms::Api.new(@vendor.distributor).get_inventory_info(article_data(numbers))
+        article_numbers.each_slice(20) do |numbers|
+          response = SpreeOngoingWms::Api.new(vendor.distributor).get_inventory_info(article_data(numbers))
           if response.success?
             response = JSON.parse(response.body, symbolize_names: true)
             puts response
@@ -36,7 +36,7 @@ module OngoingWms
 
       def article_data(numbers)
         {
-          goodsOwnerId: @vendor.distributor.goods_owner_id,
+          goodsOwnerId: vendor.distributor.goods_owner_id,
           # articleSystemIdFrom: nil,
           maxArticlesToGet: MAX_ARTICLES_TO_GET,
           articleNumbers: numbers,

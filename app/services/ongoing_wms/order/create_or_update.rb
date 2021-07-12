@@ -22,9 +22,10 @@ module OngoingWms
       private
 
       def create_or_update_order(order_data)
-        response = SpreeOngoingWms::Api.new(@vendor.distributor).create_or_update_order(order_data)
+        response = SpreeOngoingWms::Api.new(vendor.distributor).create_or_update_order(order_data)
         if response.success?
           response = JSON.parse(response.body, symbolize_names: true)
+          order.vendor_line_items(vendor).update_all(external_order_id: response[:orderId])
           puts response
         else
           raise ServiceError.new([Spree.t(:error, response: response)])
@@ -33,9 +34,9 @@ module OngoingWms
 
       def order_data
         {
-          goodsOwnerId: @vendor.distributor.goods_owner_id,
-          orderNumber: @order.number,
-          deliveryDate: @order.approved_at + 2.days,
+          goodsOwnerId: vendor.distributor.goods_owner_id,
+          orderNumber: order.number,
+          deliveryDate: order.approved_at + 2.days,
           consignee: consignee_detail,
           # referenceNumber: "<string>",
           # goodsOwnerOrderId: "<string>",
@@ -97,7 +98,7 @@ module OngoingWms
             code: "ut en",
             name: "Duis proident velit"
           },
-          customerPrice: @order.total
+          customerPrice: order.total
         }.to_json
       end
 
@@ -133,7 +134,7 @@ module OngoingWms
         #   }
         # ]
         line_items = []
-        @order.vendor_line_items(@vendor).each do |item|
+        order.vendor_line_items(vendor).each do |item|
           line_item = {}
           line_item[:rowNumber] = item.id
           line_item[:articleNumber] = item.product.id
@@ -144,17 +145,17 @@ module OngoingWms
       end
 
       def consignee_detail
-        return {} unless @order.ship_address
+        return {} unless order.ship_address
 
         {
-          customerNumber: @order.ship_address.phone,
-          name: @order.ship_address.first_name + ' ' + @order.ship_address.last_name,
-          address1: @order.ship_address.address1,
-          address2: @order.ship_address.address2,
+          customerNumber: order.ship_address.phone,
+          name: order.ship_address.first_name + ' ' + order.ship_address.last_name,
+          address1: order.ship_address.address1,
+          address2: order.ship_address.address2,
           # address3: "<string>",
-          postCode: @order.ship_address.zipcode,
-          city: @order.ship_address.city,
-          countryCode: @order.ship_address.country.iso,
+          postCode: order.ship_address.zipcode,
+          city: order.ship_address.city,
+          countryCode: order.ship_address.country.iso,
           # countryStateCode: "<string>",
           # remark: "<string>",
           # doorCode: "<string>"

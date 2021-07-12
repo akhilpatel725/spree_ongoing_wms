@@ -1,7 +1,7 @@
 module OngoingWms
   module Article
     class CreateOrUpdate < ApplicationService
-      attr_reader :article, :vendor
+      attr_reader :vendor, :article
 
       def initialize(args = {})
         super
@@ -22,7 +22,7 @@ module OngoingWms
       private
 
       def create_or_update_article(article_data)
-        response = SpreeOngoingWms::Api.new(@vendor.distributor).create_or_update_article(article_data)
+        response = SpreeOngoingWms::Api.new(vendor.distributor).create_or_update_article(article_data)
         if response.success?
           response = JSON.parse(response.body, symbolize_names: true)
           puts response
@@ -33,15 +33,15 @@ module OngoingWms
 
       def article_data
         {
-          goodsOwnerId: @vendor.distributor.goods_owner_id,
-          articleNumber: @article.id,
+          goodsOwnerId: vendor.distributor.goods_owner_id,
+          articleNumber: article.id,
           # articleGroup: {
           #   code: "aliquip",
           #   name: "aliqua laboris commodo"
           # },
           articleCategory: {
-            code: @article.category&.permalink,
-            name: @article.category&.name
+            code: article.category&.permalink,
+            name: article.category&.name
           },
           # articleColor: {
           #   code: "in labore nostrud Lorem",
@@ -51,18 +51,18 @@ module OngoingWms
           #   code: "aliquip ad labore",
           #   name: "sunt veniam voluptate nisi laboris"
           # },
-          articleName: @article.name,
+          articleName: article.name,
           # productCode: "<string>",
           # unitCode: "<string>",
-          description: @article.description,
+          description: article.description,
           # isStockArticle: "<boolean>",
           supplierInfo: {
             # supplierArticleNumber: "<string>",
             # supplierNumber: "<string>",
-            supplierName: @vendor.name
+            supplierName: vendor.name
           },
           barCodeInfo: {
-            barCode: @article.sku,
+            barCode: article.sku,
             # barCodePackage: "<string>",
             # barCodePallet: "<string>",
             # alternativeBarCodes: [
@@ -84,15 +84,15 @@ module OngoingWms
           },
           # quantityPerPackage: "<integer>",
           # quantityPerPallet: "<integer>",
-          weight: @article.weight,
+          weight: article.weight,
           # length: "<decimal>",
-          width: @article.width,
-          height: @article.height,
+          width: article.width,
+          height: article.height,
           # volume: "<decimal>",
           # purchasePrice: "<decimal>",
           # stockValuationPrice: "<decimal>",
-          customerPrice: @article.price,
-          purcaseCurrencyCode: @article.cost_currency,
+          customerPrice: article.price,
+          purcaseCurrencyCode: article.cost_currency,
           # countryOfOriginCode: "<string>",
           # statisticsNumber: "<string>",
           # articleNameTranslations: [
@@ -107,7 +107,7 @@ module OngoingWms
           # ],
           # stockLimit: "<integer>",
           # minimumReorderQuantity: "<decimal>",
-          netWeight: @article.weight,
+          netWeight: article.weight,
           # linkToPicture: "<string>",
           # structureDefinition: {
           #   articleKind: "<string>",
