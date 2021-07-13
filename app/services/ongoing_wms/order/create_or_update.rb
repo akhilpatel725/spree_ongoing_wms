@@ -22,13 +22,13 @@ module OngoingWms
       private
 
       def create_or_update_order(order_data)
-        response = SpreeOngoingWms::Api.new(vendor.distributor).create_or_update_order(order_data)
-        if response.success?
-          response = JSON.parse(response.body, symbolize_names: true)
-          order.vendor_line_items(vendor).update_all(external_order_id: response[:orderId])
-          puts response
+        @response = SpreeOngoingWms::Api.new(vendor.distributor).create_or_update_order(order_data)
+        if @response.success?
+          @response = JSON.parse(@response.body, symbolize_names: true)
+          store_external_order_id
+          puts @response
         else
-          raise ServiceError.new([Spree.t(:error, response: response)])
+          raise ServiceError.new([Spree.t(:error, response: @response)])
         end
       end
 
@@ -160,6 +160,10 @@ module OngoingWms
           # remark: "<string>",
           # doorCode: "<string>"
         }
+      end
+
+      def store_external_order_id
+        order.vendor_line_items(vendor).update_all(external_order_id: @response[:orderId])
       end
     end
   end

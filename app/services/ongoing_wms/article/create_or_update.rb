@@ -22,12 +22,12 @@ module OngoingWms
       private
 
       def create_or_update_article(article_data)
-        response = SpreeOngoingWms::Api.new(vendor.distributor).create_or_update_article(article_data)
-        if response.success?
-          response = JSON.parse(response.body, symbolize_names: true)
-          puts response
+        @response = SpreeOngoingWms::Api.new(vendor.distributor).create_or_update_article(article_data)
+        if @response.success?
+          @response = JSON.parse(@response.body, symbolize_names: true)
+          puts @response
         else
-          raise ServiceError.new([Spree.t(:error, response: response)])
+          raise ServiceError.new([Spree.t(:error, response: @response)])
         end
       end
 
