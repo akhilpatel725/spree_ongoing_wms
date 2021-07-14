@@ -25,6 +25,7 @@ module OngoingWms
         @response = SpreeOngoingWms::Api.new(vendor.distributor).create_or_update_article(article_data)
         if @response.success?
           @response = JSON.parse(@response.body, symbolize_names: true)
+          store_external_product_id
           puts @response
         else
           raise ServiceError.new([Spree.t(:error, response: @response)])
@@ -119,6 +120,10 @@ module OngoingWms
           #   ]
           # }
         }.to_json
+      end
+
+      def store_external_product_id
+        article.update_columns(external_product_id: @response[:articleSystemId])
       end
     end
   end
