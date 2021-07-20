@@ -22,6 +22,10 @@ class SpreeOngoingWms::Request
     request = HTTParty.post("#{distributor.warehouse_system_endpoint}#{path}", body: data, headers: headers)
   end
 
+  def patch(path, data)
+    request = HTTParty.patch("#{distributor.warehouse_system_endpoint}#{path}", body: data, headers: headers)
+  end
+
   def headers
     { 'Authorization': authorization_header, 'Accept': 'application/json', 'Content-Type': 'application/json' }
   end

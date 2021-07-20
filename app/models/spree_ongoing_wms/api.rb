@@ -18,6 +18,10 @@ class SpreeOngoingWms::Api
     @response = SpreeOngoingWms::Request.new(@distributor).put('/api/v1/articles', data)
   end
 
+  def update_order_status(order_id, data)
+    @response = SpreeOngoingWms::Request.new(@distributor).patch("/api/v1/orders/#{order_id}/orderStatus", data)
+  end
+
   def get_inventory_info(query)
     @response = SpreeOngoingWms::Request.new(@distributor).get('/api/v1/articles/inventoryPerWarehouse?' + query)
   end

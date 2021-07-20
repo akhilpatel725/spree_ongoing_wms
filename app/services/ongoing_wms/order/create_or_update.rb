@@ -36,7 +36,7 @@ module OngoingWms
         {
           goodsOwnerId: vendor.distributor.goods_owner_id,
           orderNumber: order.number,
-          deliveryDate: order.approved_at + 2.days,
+          deliveryDate: order.completed_at + 2.days,
           consignee: consignee_detail,
           # referenceNumber: "<string>",
           # goodsOwnerOrderId: "<string>",
