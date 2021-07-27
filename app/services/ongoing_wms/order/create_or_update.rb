@@ -42,7 +42,7 @@ module OngoingWms
           # goodsOwnerOrderId: "<string>",
           # salesCode: "<string>",
           # orderRemark: "<string>",
-          # deliveryInstruction: "<string>",
+          deliveryInstruction: order.special_instructions,
           # servicePointCode: "<string>",
           # freeText1: "<string>",
           # freeText2: "<string>",
