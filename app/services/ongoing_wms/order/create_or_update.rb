@@ -11,7 +11,10 @@ module OngoingWms
 
       def call
         begin
-          create_or_update_order(order_data)
+          order_lines_per_distributor.each do |distributor, order_lines|
+            data = order_data(distributor, order_lines)
+            create_or_update_order(distributor, data)
+          end
         rescue ServiceError => error
           add_to_errors(error.messages)
         end
@@ -21,20 +24,41 @@ module OngoingWms
 
       private
 
-      def create_or_update_order(order_data)
-        @response = SpreeOngoingWms::Api.new(vendor.distributor).create_or_update_order(order_data)
+      def create_or_update_order(distributor, order_data)
+        @response = SpreeOngoingWms::Api.new(distributor).create_or_update_order(order_data)
         if @response.success?
           @response = JSON.parse(@response.body, symbolize_names: true)
-          store_external_order_id
+          store_external_order_id(distributor)
           puts @response
         else
           raise ServiceError.new([Spree.t(:error, response: @response)])
         end
       end
 
-      def order_data
+      def order_lines_per_distributor
+        return @items_by_distributor if @items_by_distributor.present?
+
+        @items_by_distributor = {}
+
+        order.vendor_line_items(vendor).each do |item|
+          item_distributor = item.product&.distributor || item&.product_line&.distributor
+
+          next unless item_distributor && item_distributor.ongoing_wms?
+
+          line_item = {}
+          line_item[:rowNumber] = item.id
+          line_item[:articleNumber] = item.product.id
+          line_item[:numberOfItems] = item.quantity
+
+          @items_by_distributor[item_distributor] ||= []
+          @items_by_distributor[item_distributor] << line_item
+        end
+        @items_by_distributor
+      end
+
+      def order_data(distributor, order_lines)
         {
-          goodsOwnerId: vendor.distributor.goods_owner_id,
+          goodsOwnerId: distributor.goods_owner_id,
           orderNumber: order.number,
           deliveryDate: order.completed_at + 2.days,
           consignee: consignee_detail,
@@ -102,48 +126,6 @@ module OngoingWms
         }.to_json
       end
 
-      def order_lines
-        # [
-        #   {
-        #     rowNumber: "<string>",
-        #     articleNumber: "<string>",
-        #     numberOfItems: "<decimal>",
-        #     comment: "<string>",
-        #     shouldBePicked: "<boolean>",
-        #     serialNumber: "<string>",
-        #     lineTotalCustomsValue: "<decimal>",
-        #     batchNumber: "<string>",
-        #     lineType: {
-        #       code: "labore Lorem",
-        #       name: "exercitation aliqua dolore"
-        #     }
-        #   },
-        #   {
-        #     rowNumber: "<string>",
-        #     articleNumber: "<string>",
-        #     numberOfItems: "<decimal>",
-        #     comment: "<string>",
-        #     shouldBePicked: "<boolean>",
-        #     serialNumber: "<string>",
-        #     lineTotalCustomsValue: "<decimal>",
-        #     batchNumber: "<string>",
-        #     lineType: {
-        #       code: "eu nostrud ullamco ut",
-        #       name: "fugiat deserunt "
-        #     }
-        #   }
-        # ]
-        line_items = []
-        order.vendor_line_items(vendor).each do |item|
-          line_item = {}
-          line_item[:rowNumber] = item.id
-          line_item[:articleNumber] = item.product.id
-          line_item[:numberOfItems] = item.quantity
-          line_items << line_item
-        end
-        line_items
-      end
-
       def consignee_detail
         return {} unless order.ship_address
 
@@ -162,8 +144,12 @@ module OngoingWms
         }
       end
 
-      def store_external_order_id
-        order.vendor_line_items(vendor).update_all(external_order_id: @response[:orderId])
+      def store_external_order_id(distributor)
+        item_ids = order_lines_per_distributor[distributor].pluck(:rowNumber)
+
+        return unless item_ids.any?
+
+        Spree::LineItem.where(id: item_ids).update_all(external_order_id: @response[:orderId])
       end
     end
   end

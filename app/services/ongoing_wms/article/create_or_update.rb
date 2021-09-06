@@ -1,11 +1,11 @@
 module OngoingWms
   module Article
     class CreateOrUpdate < ApplicationService
-      attr_reader :vendor, :article
+      attr_reader :distributor, :article
 
       def initialize(args = {})
         super
-        @vendor = args[:vendor]
+        @distributor = args[:distributor]
         @article = args[:article]
       end
 
@@ -22,7 +22,7 @@ module OngoingWms
       private
 
       def create_or_update_article(article_data)
-        @response = SpreeOngoingWms::Api.new(vendor.distributor).create_or_update_article(article_data)
+        @response = SpreeOngoingWms::Api.new(distributor).create_or_update_article(article_data)
         if @response.success?
           @response = JSON.parse(@response.body, symbolize_names: true)
           store_external_product_id
@@ -34,7 +34,7 @@ module OngoingWms
 
       def article_data
         {
-          goodsOwnerId: vendor.distributor.goods_owner_id,
+          goodsOwnerId: distributor.goods_owner_id,
           articleNumber: article.id,
           # articleGroup: {
           #   code: "aliquip",
@@ -60,7 +60,7 @@ module OngoingWms
           supplierInfo: {
             # supplierArticleNumber: "<string>",
             # supplierNumber: "<string>",
-            supplierName: vendor.name
+            supplierName: article.vendor&.name
           },
           barCodeInfo: {
             barCode: article.sku,
