@@ -83,10 +83,10 @@ module OngoingWms
             #   }
             # ]
           },
-          # quantityPerPackage: "<integer>",
-          # quantityPerPallet: "<integer>",
+          quantityPerPackage: article.sales_unit_size,
+          # quantityPerPallet: 3,
           weight: article.weight,
-          # length: "<decimal>",
+          length: article.depth,
           width: article.width,
           height: article.height,
           # volume: "<decimal>",
