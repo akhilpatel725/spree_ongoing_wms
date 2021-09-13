@@ -53,13 +53,13 @@ module OngoingWms
           #   name: "sunt veniam voluptate nisi laboris"
           # },
           articleName: article.name,
-          # productCode: "<string>",
+          productCode: article.ean,
           # unitCode: "<string>",
           description: article.description,
           # isStockArticle: "<boolean>",
           supplierInfo: {
             # supplierArticleNumber: "<string>",
-            # supplierNumber: "<string>",
+            supplierNumber: article.vendor&.contact_phone,
             supplierName: article.vendor&.name
           },
           barCodeInfo: {
@@ -84,11 +84,11 @@ module OngoingWms
             # ]
           },
           quantityPerPackage: article.sales_unit_size,
-          # quantityPerPallet: 3,
-          weight: article.weight,
-          length: article.depth,
+          quantityPerPallet: article.consumer_package_size,
+          weight: article.weight.to_f / 1000,
+          length: article.depth.to_f / 1000,
           width: article.width,
-          height: article.height,
+          height: article.height.to_f / 1000,
           # volume: "<decimal>",
           # purchasePrice: "<decimal>",
           # stockValuationPrice: "<decimal>",
@@ -108,7 +108,7 @@ module OngoingWms
           # ],
           # stockLimit: "<integer>",
           # minimumReorderQuantity: "<decimal>",
-          netWeight: article.weight,
+          netWeight: article.weight.to_f / 1000,
           # linkToPicture: "<string>",
           # structureDefinition: {
           #   articleKind: "<string>",
