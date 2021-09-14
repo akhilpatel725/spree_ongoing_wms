@@ -87,7 +87,7 @@ module OngoingWms
           quantityPerPallet: article.consumer_package_size,
           weight: article.weight.to_f / 1000,
           length: article.depth.to_f / 1000,
-          width: article.width,
+          width: article.width.to_f / 1000,
           height: article.height.to_f / 1000,
           # volume: "<decimal>",
           # purchasePrice: "<decimal>",
