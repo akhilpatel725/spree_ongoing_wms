@@ -54,7 +54,7 @@ module OngoingWms
           # },
           articleName: article.name,
           productCode: article.ean,
-          # unitCode: "<string>",
+          unitCode: article.inventory_unit&.code,
           description: article.description,
           # isStockArticle: "<boolean>",
           supplierInfo: {
