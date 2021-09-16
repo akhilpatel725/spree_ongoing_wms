@@ -94,7 +94,7 @@ module OngoingWms
           # stockValuationPrice: "<decimal>",
           customerPrice: article.price,
           purcaseCurrencyCode: article.cost_currency,
-          # countryOfOriginCode: "<string>",
+          countryOfOriginCode: article&.vendor&.addresses&.default&.country_iso,
           # statisticsNumber: "<string>",
           # articleNameTranslations: [
           #   {
