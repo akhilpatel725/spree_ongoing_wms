@@ -22,7 +22,11 @@ module OngoingWms
       private
 
       def create_or_update_article(article_data)
-        @response = SpreeOngoingWms::Api.new(distributor).create_or_update_article(article_data)
+        @response =  if article.external_product_id?
+                      SpreeOngoingWms::Api.new(distributor).update_article(article.external_product_id, article_data)
+                     else
+                      SpreeOngoingWms::Api.new(distributor).create_article(article_data)
+                     end
         if @response.success?
           @response = JSON.parse(@response.body, symbolize_names: true)
           store_external_product_id

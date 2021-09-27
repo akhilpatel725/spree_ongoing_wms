@@ -1,20 +1,18 @@
 module OngoingWms
   module Order
     class CreateOrUpdate < ApplicationService
-      attr_reader :order, :vendor
+      attr_reader :order, :distributor
 
       def initialize(args = {})
         super
-        @vendor = args[:vendor]
+        @distributor = args[:distributor]
         @order = args[:order]
       end
 
       def call
         begin
-          order_lines_per_distributor.each do |distributor, order_lines|
-            data = order_data(distributor, order_lines)
-            create_or_update_order(distributor, data)
-          end
+          data = order_data(order_lines)
+          create_or_update_order(data)
         rescue ServiceError => error
           add_to_errors(error.messages)
         end
@@ -24,39 +22,30 @@ module OngoingWms
 
       private
 
-      def create_or_update_order(distributor, order_data)
-        @response = SpreeOngoingWms::Api.new(distributor).create_or_update_order(order_data)
+      def create_or_update_order(order_lines)
+        @response = SpreeOngoingWms::Api.new(distributor).create_or_update_order(order_lines)
         if @response.success?
           @response = JSON.parse(@response.body, symbolize_names: true)
-          store_external_order_id(distributor)
+          store_external_order_id
           puts @response
         else
           raise ServiceError.new([Spree.t(:error, response: @response)])
         end
       end
 
-      def order_lines_per_distributor
-        return @items_by_distributor if @items_by_distributor.present?
-
-        @items_by_distributor = {}
-
-        order.vendor_line_items(vendor).each do |item|
-          item_distributor = item.product&.distributor || item&.product_line&.distributor
-
-          next unless item_distributor && item_distributor.ongoing_wms?
-
+      def order_lines
+        order_lines = []
+        order_line_items_for_distributor.each do |item|
           line_item = {}
           line_item[:rowNumber] = item.id
           line_item[:articleNumber] = item.product.id
           line_item[:numberOfItems] = item.quantity
-
-          @items_by_distributor[item_distributor] ||= []
-          @items_by_distributor[item_distributor] << line_item
+          order_lines << line_item
         end
-        @items_by_distributor
+        order_lines
       end
 
-      def order_data(distributor, order_lines)
+      def order_data(order_lines)
         {
           goodsOwnerId: distributor.goods_owner_id,
           orderNumber: order.number,
@@ -144,12 +133,14 @@ module OngoingWms
         }
       end
 
-      def store_external_order_id(distributor)
-        item_ids = order_lines_per_distributor[distributor].pluck(:rowNumber)
+      def order_line_items_for_distributor
+        @order_line_items_for_distributor ||= order.line_items.for_distributor(distributor)
+      end
 
-        return unless item_ids.any?
-
-        Spree::LineItem.where(id: item_ids).update_all(external_order_id: @response[:orderId])
+      def store_external_order_id
+        order_line_items_for_distributor.each do |item|
+          item.update_columns(external_order_id: @response[:orderId])
+        end
       end
     end
   end

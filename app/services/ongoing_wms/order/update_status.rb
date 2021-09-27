@@ -1,19 +1,17 @@
 module OngoingWms
   module Order
     class UpdateStatus < ApplicationService
-      attr_reader :order, :vendor
+      attr_reader :order, :distributor
 
       def initialize(args = {})
         super
-        @vendor = args[:vendor]
+        @distributor = args[:distributor]
         @order = args[:order]
       end
 
       def call
         begin
-          order_ids_per_distributor.each do |distributor, ids|
-            ids.each { |id| update_order_status(distributor, id) }
-          end
+          update_order_status
         rescue ServiceError => error
           add_to_errors(error.messages)
         end
@@ -23,34 +21,25 @@ module OngoingWms
 
       private
 
-      def update_order_status(distributor, external_order_id)
+      def update_order_status
         return unless external_order_id
 
         # Status code for Released = 300
         @response = SpreeOngoingWms::Api.new(distributor).update_order_status(external_order_id, { orderStatusNumber: 300 }.to_json)
         if @response.success?
           @response = JSON.parse(@response.body, symbolize_names: true)
-          store_external_order_id
           puts @response
         else
           raise ServiceError.new([Spree.t(:error, response: @response)])
         end
       end
 
-      def order_ids_per_distributor
-        return @items_by_distributor if @items_by_distributor.present?
+      def external_order_id
+        @external_order_id = order_line_items_for_distributor.map(&:external_order_id).uniq.compact.first
+      end
 
-        @items_by_distributor = {}
-
-        order.vendor_line_items(vendor).each do |item|
-          item_distributor = item.product&.distributor || item&.product_line&.distributor
-
-          next unless item_distributor&.ongoing_wms? && item.external_order_id
-
-          @items_by_distributor[item_distributor] ||= []
-          @items_by_distributor[item_distributor] << item.external_order_id
-        end
-        @items_by_distributor
+      def order_line_items_for_distributor
+        order.line_items.for_distributor(distributor)
       end
     end
   end
